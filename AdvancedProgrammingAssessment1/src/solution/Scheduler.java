@@ -23,7 +23,8 @@ public class Scheduler implements IScheduler {
         while (!schedule.isCompleted()) {
             FlightInfo flight = schedule.getRemainingAllocations().get(0);
             allocateAircraft(aircraftDAO, flight);
-            allocatePilots(crewDAO, flight);
+            allocateCaptain(crewDAO, flight);
+            allocateFirstOfficer(crewDAO, flight);
             allocateCabinCrew(crewDAO, flight);
             try {
                 schedule.completeAllocationFor(flight);
@@ -57,64 +58,158 @@ public class Scheduler implements IScheduler {
         }
     }
 
-    /*allocate a Pilots (Captain, First Officer) to a single Flight*/
-    private void allocatePilots(ICrewDAO crewDAO, FlightInfo flight) {
-        // allocate Captain to flight
+    /*allocate a Captain to a single Flight
+    * firstly, attempt to allocate a Captain with matching Route Home Base and Aircraft Type Rating to
+    * take advantage of using a helper function to check for an appropriate Captain */
+    private void allocateCaptain(ICrewDAO crewDAO, FlightInfo flight) {
         Pilot captain = null;
-        Pilot firstOfficer = null;
+        Aircraft aircraft = schedule.getAircraftFor(flight);
+        Route route = flight.getFlight();
+        Pilot.Rank rank = Pilot.Rank.CAPTAIN;
 
-        // allocate Captain
-        for (Pilot p : crewDAO.getAllPilots()) {
-            if (p.getRank() == Pilot.Rank.CAPTAIN && !schedule.hasConflict(p, flight)) {
-                captain = p;
-                break;
-            }
+
+        switch (0) {
+            case 0:
+                List<Pilot> pilotsByHomeBaseAndTypeRating = crewDAO.findPilotsByHomeBaseAndTypeRating(aircraft.getTypeCode(), route.getDepartureAirportCode());
+                captain = findAvailablePilot(pilotsByHomeBaseAndTypeRating, flight, rank);
+                if (captain != null) break;
+            case 1:
+                List<Pilot> pilotsByTypeRating = crewDAO.findPilotsByTypeRating(aircraft.getTypeCode());
+                captain = findAvailablePilot(pilotsByTypeRating, flight, rank);
+                if (captain != null) break;
+            case 2: // todo review this condition, it seemed to add ~ 120,000 to score.
+                List<Pilot> pilotsByHomeBase = crewDAO.findPilotsByHomeBase(route.getDepartureAirportCode());
+//                captain = findAvailablePilot(pilotsByHomeBase, flight, rank);
+                if (captain != null) break;
+            case 3:
+                List<Pilot> pilotsAll = crewDAO.getAllPilots();
+                captain = findAvailablePilot(pilotsAll, flight, rank);
+                if (captain != null) break;
         }
 
-        // allocate First Officer
-        for (Pilot p : crewDAO.getAllPilots()) {
-            if (p.getRank() == Pilot.Rank.FIRST_OFFICER && !schedule.hasConflict(p, flight)) {
-                firstOfficer = p;
-                break;
-            }
-        }
 
         try {
             schedule.allocateCaptainTo(captain, flight);
         } catch (DoubleBookedException e) {
             System.err.println("Captain allocation error");
         }
-        try {
-            schedule.allocateFirstOfficerTo(firstOfficer, flight);
-        } catch (DoubleBookedException e) {
-            System.err.println("Captain allocation error");
-        }
-
-        // testers
+        // debug testers
         if (schedule.getCaptainOf(flight) == null) {
             System.out.println("Captain not allocated to flight " + flight);
         }
-        if (schedule.getCaptainOf(flight) == null) {
+    }
+
+    /*allocate a First Officer to a single Flight*/
+    private void allocateFirstOfficer(ICrewDAO crewDAO, FlightInfo flight) {
+        Pilot firstOfficer = null;
+        Aircraft aircraft = schedule.getAircraftFor(flight);
+        Route route = flight.getFlight();
+        Pilot.Rank rank = Pilot.Rank.FIRST_OFFICER;
+
+        switch (0) {
+            case 0:
+                List<Pilot> pilotsByHomeBaseAndTypeRating = crewDAO.findPilotsByHomeBaseAndTypeRating(aircraft.getTypeCode(), route.getDepartureAirportCode());
+                firstOfficer = findAvailablePilot(pilotsByHomeBaseAndTypeRating, flight, rank);
+                if (firstOfficer != null) break;
+            case 1:
+                List<Pilot> pilotsByTypeRating = crewDAO.findPilotsByTypeRating(aircraft.getTypeCode());
+                firstOfficer = findAvailablePilot(pilotsByTypeRating, flight, rank);
+                if (firstOfficer != null) break;
+            case 2: // todo review this condition, it seemed to add ~ 132,380 to score.
+                List<Pilot> pilotsByHomeBase = crewDAO.findPilotsByHomeBase(route.getDepartureAirportCode());
+//                firstOfficer = findAvailablePilot(pilotsByHomeBase, flight, rank);
+                if (firstOfficer != null) break;
+            case 3:
+                List<Pilot> pilotsAll = crewDAO.getAllPilots();
+                firstOfficer = findAvailablePilot(pilotsAll, flight, rank);
+                if (firstOfficer != null) break;
+        }
+
+        try {
+            schedule.allocateFirstOfficerTo(firstOfficer, flight);
+        } catch (DoubleBookedException e) {
+            System.err.println("First Officer allocation error");
+        }
+        // debug testers
+        if (schedule.getFirstOfficerOf(flight) == null) {
             System.out.println("First Officer not allocated to flight " + flight);
         }
     }
 
-    /*allocate many Cabin Crew to a flight aircraft*/
+    /* the goal of this function is to eliminate the repeat of code in the pilot allocation functions
+     * aka helper function*/
+    private Pilot findAvailablePilot(List<Pilot> pilots, FlightInfo flight, Pilot.Rank rank ) {
+        for (Pilot p : pilots) {
+            if (p.getRank() == rank && !schedule.hasConflict(p, flight)) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    /*allocate many Cabin Crew to a flight aircraft
+    * firstly, attempt to allocate matching Cabin Crew by matching Home Base and Type Rating
+    * if not, attempt to allocate by matching type Rating only
+    * if not, attempt to allocate by Home Base only,
+    * if not, finally, allocate any Cabin Crew that do not have conflict with the Flight*/
     private void allocateCabinCrew(ICrewDAO crewDAO, FlightInfo flight) {
         Aircraft aircraft = schedule.getAircraftFor(flight);
+        Route route = flight.getFlight();
 
         for (int i=0; i<schedule.getAircraftFor(flight).getCabinCrewRequired(); i++) {
-            for (CabinCrew crew : crewDAO.getAllCabinCrew()) {
-                if (schedule.hasConflict(crew, flight) == false && !schedule.getCabinCrewOf(flight).contains(crew)) {
+            boolean allocated = false;
+            for (CabinCrew crew : crewDAO.findCabinCrewByHomeBaseAndTypeRating(aircraft.getTypeCode(), route.getDepartureAirportCode())) {
+                if (!schedule.hasConflict(crew, flight) && !schedule.getCabinCrewOf(flight).contains(crew)) {
                     try {
                         schedule.allocateCabinCrewTo(crew, flight);
+                        allocated = true;
                         break;
                     } catch (DoubleBookedException e) {
                         e.printStackTrace();
                     }
                 }
             }
+            if (!allocated) {
+                for (CabinCrew crew : crewDAO.findCabinCrewByTypeRating(aircraft.getTypeCode())) {
+                    if (!schedule.hasConflict(crew, flight) && !schedule.getCabinCrewOf(flight).contains(crew)) {
+                        try {
+                            schedule.allocateCabinCrewTo(crew, flight);
+                            allocated = true;
+                            break;
+                        } catch (DoubleBookedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+            if (!allocated) {
+                for (CabinCrew crew : crewDAO.findCabinCrewByHomeBase(route.getDepartureAirportCode())) {
+                    if (!schedule.hasConflict(crew, flight) && !schedule.getCabinCrewOf(flight).contains(crew)) {
+                        try {
+                            schedule.allocateCabinCrewTo(crew, flight);
+                            allocated = true;
+                            break;
+                        } catch (DoubleBookedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+            if (allocated == false) {
+                for (CabinCrew crew : crewDAO.getAllCabinCrew()) {
+                    if (!schedule.hasConflict(crew, flight) && !schedule.getCabinCrewOf(flight).contains(crew)) {
+                        try {
+                            schedule.allocateCabinCrewTo(crew, flight);
+                            allocated = true;
+                            break;
+                        } catch (DoubleBookedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
         }
+
 
     }
 
