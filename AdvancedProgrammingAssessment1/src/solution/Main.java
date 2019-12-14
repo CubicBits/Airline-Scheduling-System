@@ -66,16 +66,16 @@ public class Main {
 		Scheduler scheduler = new Scheduler(); // initialise Scheduler object & hold variable reference for setting SchedulerRunner later
 		SchedulerRunner schedulerRunner = new SchedulerRunner(aircraft, crew, route, passengers, LocalDate.parse("2020-07-01"), LocalDate.parse("2020-08-31"), scheduler);
 		scheduler.setSchedulerRunner(schedulerRunner);
-
+		
 		Schedule schedule = schedulerRunner.run();
 
-		QualityScoreCalculator score = new QualityScoreCalculator(aircraft, crew, passengers, schedule); // submit final schedule for score analysis
-		
-		String[] a = new QualityScoreCalculator(aircraft, crew, passengers, schedule).describeQualityScore();
-		for (String b : a) {
-		  	System.out.println(b);
-		  }
-		System.out.println(score.calculateQualityScore()+" (score total)");
+//		QualityScoreCalculator score = new QualityScoreCalculator(aircraft, crew, passengers, schedule); // submit final schedule for score analysis
+//		
+//		String[] a = new QualityScoreCalculator(aircraft, crew, passengers, schedule).describeQualityScore();
+//		for (String b : a) {
+//		  	System.out.println(b);
+//		  }
+//		System.out.println(score.calculateQualityScore()+" (score total)");
 
 	}
 
