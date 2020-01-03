@@ -106,7 +106,12 @@ public class CrewDAO implements ICrewDAO {
 		catch (JSONException e) {
 			throw new DataLoadingException(e);
 		}
-
+		catch (NullPointerException e) {
+			throw new DataLoadingException(e);
+		}
+		catch (Exception e) {
+			throw new DataLoadingException(e);
+		}
 	}
 
 	/**
@@ -250,7 +255,7 @@ public class CrewDAO implements ICrewDAO {
 	 */
 	@Override
 	public List<CabinCrew> getAllCabinCrew() {
-		return cabinCrew;
+		return new ArrayList<>(cabinCrew);
 	}
 
 	/**
@@ -274,7 +279,7 @@ public class CrewDAO implements ICrewDAO {
 	 */
 	@Override
 	public List<Pilot> getAllPilots() {
-		return pilots;
+		return new ArrayList<>(pilots);
 	}
 
 	@Override

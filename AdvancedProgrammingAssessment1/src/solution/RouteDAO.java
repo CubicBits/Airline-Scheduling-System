@@ -8,6 +8,7 @@ import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,25 +48,30 @@ public class RouteDAO implements IRouteDAO {
 //		should be additive: it should be possible to load more than one file’s worth of routes into a single
 //		DAO. If there is a problem loading the data, perhaps because a file is malformed, then a
 //		DataLoadingException should be thrown.
-
+		
 		try {
 			File inputFile = new File(String.valueOf(p));
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 			Document doc = dBuilder.parse(inputFile);
 			doc.getDocumentElement().normalize();
-
 			NodeList routeList = doc.getElementsByTagName("Route");
 
 			for (int i = 0; i < routeList.getLength(); i++) {
 				Node route = routeList.item(i);
 
 				if (route.getNodeType() == Node.ELEMENT_NODE) {
+					
 					Element routeElement = (Element) route;
 					int flightNumber = Integer.parseInt(routeElement
 							.getElementsByTagName("FlightNumber")
 							.item(0).getTextContent());
 					String dayOfWeek = routeElement.getElementsByTagName("DayOfWeek").item(0).getTextContent();
+					
+					if (!dayOfWeek.equals("Mon") && !dayOfWeek.equals("Tue") && !dayOfWeek.equals("Wed") && !dayOfWeek.equals("Thu") && !dayOfWeek.equals("Fri") && !dayOfWeek.equals("Sat") && !dayOfWeek.equals("Sun")) {
+						throw new DataLoadingException(new Throwable("Invalid day of week"));
+					}
+					
 					LocalTime departureTime = LocalTime.parse(routeElement
 							.getElementsByTagName("DepartureTime")
 							.item(0).getTextContent());
@@ -103,10 +109,6 @@ public class RouteDAO implements IRouteDAO {
 				}
 			}
 		} 
-//		catch (Exceptions e) {
-//			e.printStackTrace();
-//			throw new DataLoadingException(e);
-//		}
 		catch (FileNotFoundException fne) {
 			//There was a problem reading the file
 			throw new DataLoadingException(fne);
@@ -118,11 +120,20 @@ public class RouteDAO implements IRouteDAO {
 		catch (IllegalArgumentException iae) {
 			// there was a problem reading the file
 			throw new DataLoadingException(iae);
-		} catch (ParserConfigurationException e) {
-			// TODO Auto-generated catch block
+		} 
+		catch (ParserConfigurationException e) {
+		 	throw new DataLoadingException(e);
+		}
+		catch (SAXParseException e) {
 			throw new DataLoadingException(e);
-		} catch (SAXException e) {
-			// TODO Auto-generated catch block
+		}
+		catch (SAXException e) {
+			throw new DataLoadingException(e);
+		} 
+		catch (DateTimeParseException e) {
+			throw new DataLoadingException(e);
+		}
+		catch (Exception e) {
 			throw new DataLoadingException(e);
 		}
 
@@ -235,7 +246,7 @@ public class RouteDAO implements IRouteDAO {
 	@Override
 	public List<Route> getAllRoutes() {
 		// TODO still to fully test
-		return routes;
+		return new ArrayList<>(routes);
 	}
 
 	/**

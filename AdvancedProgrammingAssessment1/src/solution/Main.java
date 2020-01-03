@@ -23,7 +23,6 @@ public class Main {
 		// load Aircraft data file
 		try {
 			aircraft.loadAircraftData(Paths.get("./data/aircraft.csv"));
-//			System.out.println(aircraft.getAllAircraft());
 		}
 		catch (DataLoadingException dle) {
 			System.err.println("Error loading aircraft data");
@@ -33,8 +32,6 @@ public class Main {
 		// load Crew data file
 		try {
 			crew.loadCrewData(Paths.get("./data/crew.json"));
-//			System.out.println(crew.findCabinCrewByHomeBaseAndTypeRating("A320", "BFS"));
-//			System.out.println(crew.getAllCrew());
 		}
 		catch (DataLoadingException dle) {
 			System.err.println("Error loading crew data");
@@ -44,7 +41,9 @@ public class Main {
 		// load Routes XML file
 		try {
 			route.loadRouteData(Paths.get("./data/routes.xml"));
-//			route.loadRouteData(Paths.get("./data/malformed_routes5.xml"));
+//			route.loadRouteData(Paths.get("./data/malformed_routes5.xml")); // contains wrong tag error
+//			route.loadRouteData(Paths.get("./data/malformed_routes3.xml"));
+//			route.loadRouteData(Paths.get("./data/malformed_routes4.xml")); // duration error
 //			System.out.println(route.findRoutesbyDate(LocalDate.parse("2019-09-06")));
 //			System.out.println(route.findRoutesByDepartureAirportAndDay("MAN", "Tue"));
 		}

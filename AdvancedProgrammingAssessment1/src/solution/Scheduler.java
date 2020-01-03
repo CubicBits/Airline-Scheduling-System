@@ -27,7 +27,7 @@ public class Scheduler implements IScheduler {
 //	    		stop();
 //    		}
 //    	}).start();
-   	
+    	System.out.println("Running...");
     	this.schedule = new Schedule(routeDAO, startDate, endDate);
         while (!schedule.isCompleted()) {
             FlightInfo flight = schedule.getRemainingAllocations().get(0);
@@ -44,26 +44,27 @@ public class Scheduler implements IScheduler {
         }
         handleScheduleScore(aircraftDAO, crewDAO, passengerNumbersDAO, schedule);
 
-        while (stop == false) {
-        	for (FlightInfo flight : schedule.getCompletedAllocations()) {
-        		schedule.unAllocate(flight);
-        		allocateAircraft(aircraftDAO, flight);
-        		allocateCaptain(crewDAO, flight);
-                allocateFirstOfficer(crewDAO, flight, 2); // integer being the seed to shuffle
-                allocateCabinCrew(crewDAO, flight);
-                try {
-                    schedule.completeAllocationFor(flight);
-                } catch (InvalidAllocationException e) {
-                    e.printStackTrace();
-                    System.err.print("invalid allocation");
-                }
-                if (stop == true) break;
-        	}
-        	if (schedule.isCompleted()) {
-        		handleScheduleScore(aircraftDAO, crewDAO, passengerNumbersDAO, schedule);	
-        	}
-    
-        }
+        // Optimiser loop, by re-allocating aircraft and crew to a single flight
+//        while (stop == false) {
+//        	for (FlightInfo flight : schedule.getCompletedAllocations()) {
+//        		schedule.unAllocate(flight);
+//        		allocateAircraft(aircraftDAO, flight);
+//        		allocateCaptain(crewDAO, flight);
+//                allocateFirstOfficer(crewDAO, flight, 2); // integer being the seed to shuffle
+//                allocateCabinCrew(crewDAO, flight);
+//                try {
+//                    schedule.completeAllocationFor(flight);
+//                } catch (InvalidAllocationException e) {
+//                    e.printStackTrace();
+//                    System.err.print("invalid allocation");
+//                }
+//                if (stop == true) break;
+//        	}
+//        	if (schedule.isCompleted()) {
+//        		handleScheduleScore(aircraftDAO, crewDAO, passengerNumbersDAO, schedule);	
+//        	}
+//    
+//        }
         return schedule; 
     }
 
@@ -79,7 +80,7 @@ public class Scheduler implements IScheduler {
     	 if (scheduleScore < bestScheduleSoFarScore) {
              bestScheduleSoFarScore = scheduleScore;
              schedulerRunner.reportBestScheduleSoFar(schedule);
-//             System.out.println(bestScheduleSoFarScore + " (score best)"); // ongoing best score output
+             System.out.println(bestScheduleSoFarScore + " (score best)"); // ongoing best score output
          } 
      }
 

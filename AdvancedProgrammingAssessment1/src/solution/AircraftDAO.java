@@ -73,6 +73,12 @@ public class AircraftDAO implements IAircraftDAO {
 			// there was a problem reading the file
 			throw new DataLoadingException(iae);
 		}
+		catch (NullPointerException npe) {
+			throw new DataLoadingException(npe);
+		}
+		catch (Exception e) {
+			throw new DataLoadingException(e);
+		}
 	}
 	
 	/**
@@ -148,7 +154,8 @@ public class AircraftDAO implements IAircraftDAO {
 	 */
 	@Override
 	public List<Aircraft> getAllAircraft() {
-		return fleet;
+		//ArrayList<Aircraft> fleetClone = new ArrayList<>(fleet);
+		return new ArrayList<>(fleet);
 	}
 
 	/**
