@@ -1,5 +1,6 @@
 package solution;
 
+import java.lang.reflect.Array;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -27,45 +28,85 @@ public class Scheduler implements IScheduler {
 //	    		stop();
 //    		}
 //    	}).start();
+    	
     	System.out.println("Running...");
     	this.schedule = new Schedule(routeDAO, startDate, endDate);
-        while (!schedule.isCompleted()) {
-            FlightInfo flight = schedule.getRemainingAllocations().get(0);
-            allocateAircraft(aircraftDAO, flight);
-            allocateCaptain(crewDAO, flight);
-            allocateFirstOfficer(crewDAO, flight, 2); // int val being the seed to shuffle
+
+    	/*while (!schedule.isCompleted()) {
+    	    FlightInfo flight = schedule.getRemainingAllocations().get(0);
+    	    allocateAircraft(aircraftDAO, flight);
+    	    allocateCaptain(crewDAO, flight);
+    	    allocateFirstOfficer(crewDAO, flight, 2); // int val being the seed to shuffle
             allocateCabinCrew(crewDAO, flight);
             try {
                 schedule.completeAllocationFor(flight);
-            } catch (InvalidAllocationException e) {
+            }
+            catch (InvalidAllocationException e)
+            {
                 e.printStackTrace();
-                System.err.print("invalid allocation");
+		        System.err.print("invalid allocation");
+            }
+    	}*/
+    	
+        List<FlightInfo> flights = schedule.getRemainingAllocations();
+        ArrayList<ArrayList<FlightInfo>> flightPairing = new ArrayList<>(); // two-dimensional arraylist legA:legB
+
+        // create Flight pairs
+        System.out.println(flights.size() + " to start");
+        for (FlightInfo legA : flights) {
+            for (FlightInfo legB : flights) {
+                if (legA.getFlight().getArrivalAirportCode().equals(legB.getFlight().getDepartureAirportCode())
+                        && schedule.getAircraftFor(legB) == null
+                        && schedule.getAircraftFor(legA) == null
+                        && legA.getFlight().getArrivalTime().compareTo(legB.getFlight().getDepartureTime()) == -1 ) {
+                    ArrayList<FlightInfo> pair = new ArrayList<>();
+                    pair.add(legA);
+                    pair.add(legB);
+                    flightPairing.add(pair);
+
+
+
+                    break;
+                }
             }
         }
+            // aircraft array list analyser
+            /*for (ArrayList<FlightInfo> f : flightPairing) {
+                System.out.println(f);
+            }*/
+//            System.out.println(flightPairing.size());
+
+        // allocate aircrafts to Flight pairs & remaining non-pairs (anomaly flights)
+        for (ArrayList<FlightInfo> pair : flightPairing) {
+            FlightInfo legA = pair.get(0);
+            FlightInfo legB = pair.get(1);
+            allocateAircraftToMatchingFlights(aircraftDAO, legA, legB); // allocate aircraft to both legs
+        }
+        for (FlightInfo f : flights) {
+            if (schedule.getAircraftFor(f) == null) {
+                allocateAircraft(aircraftDAO, f);
+            }
+        }
+
+        int nullCounter = 0;
+        int counter = 0;
+        for (FlightInfo f : flights) {
+            if (schedule.getAircraftFor(f) == null) {
+                nullCounter++;
+            }
+            else {
+                counter++;
+            }
+        }
+        System.out.println(nullCounter + " nullCounter");
+        System.out.println(counter + " Counter");
+
+
+
         handleScheduleScore(aircraftDAO, crewDAO, passengerNumbersDAO, schedule);
 
-        // Optimiser loop, by re-allocating aircraft and crew to a single flight
-//        while (stop == false) {
-//        	for (FlightInfo flight : schedule.getCompletedAllocations()) {
-//        		schedule.unAllocate(flight);
-//        		allocateAircraft(aircraftDAO, flight);
-//        		allocateCaptain(crewDAO, flight);
-//                allocateFirstOfficer(crewDAO, flight, 2); // integer being the seed to shuffle
-//                allocateCabinCrew(crewDAO, flight);
-//                try {
-//                    schedule.completeAllocationFor(flight);
-//                } catch (InvalidAllocationException e) {
-//                    e.printStackTrace();
-//                    System.err.print("invalid allocation");
-//                }
-//                if (stop == true) break;
-//        	}
-//        	if (schedule.isCompleted()) {
-//        		handleScheduleScore(aircraftDAO, crewDAO, passengerNumbersDAO, schedule);	
-//        	}
-//    
-//        }
-        return schedule; 
+
+        return schedule;
     }
 
     // TODO check rest times for crew: maybe use class airportsInUk verification, or schedule.getCompletedAllocationsFor(x).getFlight()
@@ -81,6 +122,10 @@ public class Scheduler implements IScheduler {
              bestScheduleSoFarScore = scheduleScore;
              schedulerRunner.reportBestScheduleSoFar(schedule);
              System.out.println(bestScheduleSoFarScore + " (score best)"); // ongoing best score output
+             String[] a = new QualityScoreCalculator(aircraftDAO, crewDAO, passengerNumbersDAO, schedule).describeQualityScore();
+             for (String b : a) {
+                System.out.println(b);
+             }
          } 
      }
 
@@ -98,12 +143,53 @@ public class Scheduler implements IScheduler {
 
         // todo might it be possible to allocate aircraft by aircraft Type Code
 
-        // todo allocate aircraft by also analaysing passengerNumbers
+        // todo allocate aircraft by also analysing passengerNumbers
 
         if (schedule.getAircraftFor(flight) == null) { // Tester to detect flights with unallocated Aircrafts
             System.err.println("Aircraft not allocated");
             System.out.println(flight+" flight");
         }
+    }
+
+    /*allocate a single Aircraft to a two flights
+     * advanced: check for previously landed flights at the arrival airport, analyse PassengerNumber data
+     * */
+    private void allocateAircraftToMatchingFlights(IAircraftDAO aircraftDAO, FlightInfo legA, FlightInfo legB) {
+        List<Aircraft> aircraftsAll = aircraftDAO.getAllAircraft();
+
+        for (Aircraft a : aircraftsAll) {
+            if (!schedule.hasConflict(a, legA) && !schedule.hasConflict(a, legB)) {
+                try {
+                    schedule.allocateAircraftTo(a, legA);
+                } catch (DoubleBookedException e) {
+                    System.err.println("error allocating aircraft to legA ");
+                    e.printStackTrace();
+                }
+                if (!schedule.hasConflict(a, legB)) {
+                    try {
+                        schedule.allocateAircraftTo(a, legB);
+                    } catch (DoubleBookedException e) {
+                        System.err.println("error allocating aircraft to legB " + a);
+                        System.err.println("error allocating aircraft to legB " + a);
+                        e.printStackTrace();
+                    }
+                    break;
+                }
+                else {
+                    schedule.unAllocate(legA);
+                }
+            }
+
+        }
+
+//        if (schedule.getAircraftFor(legA) == null) { // Tester to detect flights with unallocated Aircrafts
+//            System.err.println("Aircraft not allocated");
+//            System.out.println(legA+" flight");
+//        }
+//        if (schedule.getAircraftFor(legB) == null) { // Tester to detect flights with unallocated Aircrafts
+//            System.err.println("Aircraft not allocated");
+//            System.out.println(legB+" flight");
+//        }
     }
 
     /* the goal of this function is to eliminate the repeat of code in the allocateAircraft() method
@@ -124,6 +210,71 @@ public class Scheduler implements IScheduler {
     /*allocate one Captain to a single Flight
     * firstly, attempt to allocate a Captain with matching Route Home Base and Aircraft Type Rating to
     * take advantage of using a helper function to check for an appropriate Captain */
+    private void allocateCaptain2(ICrewDAO crewDAO, FlightInfo legA, FlightInfo legB) {
+        Pilot captain = null;
+        Aircraft aircraftLegA = schedule.getAircraftFor(legA);
+        Aircraft aircraftLegB = schedule.getAircraftFor(legB);
+        Route routeLegA = legA.getFlight();
+        Route routeLegB = legB.getFlight();
+        Pilot.Rank rank = Pilot.Rank.CAPTAIN;
+        switch (3) {
+//            case 0:
+//                List<Pilot> pilotsByHomeBaseAndTypeRating = crewDAO.findPilotsByHomeBaseAndTypeRating(aircraft.getTypeCode(), route.getDepartureAirportCode());
+//                captain = findAvailablePilot(pilotsByHomeBaseAndTypeRating, flight, rank);
+//                if (captain != null) break;
+//            case 1:
+//                List<Pilot> pilotsByTypeRating = crewDAO.findPilotsByTypeRating(aircraft.getTypeCode());
+//                captain = findAvailablePilot(pilotsByTypeRating, flight, rank);
+//                if (captain != null) break;
+//            case 2:
+//                List<Pilot> pilotsByHomeBase = crewDAO.findPilotsByHomeBase(route.getDepartureAirportCode());
+//                captain = findAvailablePilot(pilotsByHomeBase, flight, rank);
+//                if (captain != null) break;
+            case 3:
+                List<Pilot> pilotsAll = crewDAO.getAllPilots();
+                for (Pilot p : pilotsAll) {
+                    if (p.getRank() == rank && !schedule.hasConflict(p, legA)) {
+                        if (p.getRank() == rank && !schedule.hasConflict(p, legB)) {
+                            captain = p;
+
+                            try {
+                                schedule.allocateCaptainTo(captain, legA);
+                            } catch (DoubleBookedException e) {
+                                System.err.println("Captain allocation error legA " +legA);
+                                e.printStackTrace();
+                            }
+                            try {
+                                schedule.allocateCaptainTo(captain, legB);
+                            } catch (DoubleBookedException e) {
+                                System.err.println("Captain allocation error legB " + legB);
+                                e.printStackTrace();
+                            }
+
+                            break;
+                        }
+                    }
+                }
+
+                if (captain != null) break;
+                else { System.err.println("captain not found error (chocolate)"); };
+        }
+                
+        // debug tester
+        if (captain == null) {
+        	System.err.println("Captain allocated as Null");
+        }
+        
+
+        
+        // debug tester
+        if (schedule.getCaptainOf(legA) == null) {
+            System.out.println("Captain not allocated to flight " + legA);
+        }
+    }
+
+    /*allocate one Captain to a single Flight
+     * firstly, attempt to allocate a Captain with matching Route Home Base and Aircraft Type Rating to
+     * take advantage of using a helper function to check for an appropriate Captain */
     private void allocateCaptain(ICrewDAO crewDAO, FlightInfo flight) {
         Pilot captain = null;
         Aircraft aircraft = schedule.getAircraftFor(flight);
@@ -147,25 +298,25 @@ public class Scheduler implements IScheduler {
                 captain = findAvailablePilot(pilotsAll, flight, rank);
                 if (captain != null) break;
         }
-                
+
         // debug tester
         if (captain == null) {
-        	System.err.println("Captain allocated as Null");
+            System.err.println("Captain allocated as Null");
         }
-        
+
         try {
             schedule.allocateCaptainTo(captain, flight);
         } catch (DoubleBookedException e) {
             System.err.println("Captain allocation error");
             e.printStackTrace();
         }
-        
+
         // debug tester
         if (schedule.getCaptainOf(flight) == null) {
             System.out.println("Captain not allocated to flight " + flight);
         }
     }
-    
+
     /*allocate a First Officer to a single Flight*/
     private void allocateFirstOfficer(ICrewDAO crewDAO, FlightInfo flight, int seed) {
         Pilot firstOfficer = null;
@@ -277,7 +428,7 @@ public class Scheduler implements IScheduler {
      */
     @Override
     public void stop() {
-    	System.out.println("stop condition triggered and should set stop to true [Scheduler.class]");
+//    	System.out.println("stop condition triggered and should set stop to true [Scheduler.class]");
         this.stop = true;
     }
 
