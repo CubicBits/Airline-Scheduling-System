@@ -1,0 +1,17 @@
+Schedule improv order of priority
+293,880,000 Points for crew departing a UK airport without enough rest after their previous UK landing
+    20,000 points if a crew member is allocated to a flight that departs the UK within 12 hours of their
+    last landing in the UK. Even if crew do not get a good night’s rest, they should get something loosely
+    equivalent.
+
+194,800,000 Points from crew members scheduled to fly on aircraft types for which they are unqualified(50k a piece, ~ 900 flights/6687)
+    50,000 points if a crew member is asked to crew a plane for which they are not qualified.
+
+76,980,000 Points from scheduling aircraft to depart from airports other than where they last landed
+    see Class RestBeforeDepartingWrongAirportCalculator
+
+17,030,000 Points for crew members not having a long break during each week in lieu of a weekend
+16,988,000 Points for flying from an airport outside the UK without having landed there recently
+16,741,000 Points for flying to an airport outside the UK without an upcoming return flight
+5,106,056 Points from allocating aircraft larger or smaller than the forecast passenger numbers
+
