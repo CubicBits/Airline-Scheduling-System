@@ -1,4 +1,4 @@
-# Airline-Scheduling-System
+# Airline Scheduling System
 My Computer Science Advanced Programming assignment in Java
 
 ## Introduction
