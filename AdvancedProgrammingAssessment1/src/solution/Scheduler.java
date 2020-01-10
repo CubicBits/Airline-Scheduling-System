@@ -7,6 +7,10 @@ import java.util.*;
 
 import baseclasses.*;
 
+/**
+ * Jack Owen
+ * Manchester Metropolitan University id: 17032929
+ */
 
 public class Scheduler implements IScheduler {
     Schedule schedule;

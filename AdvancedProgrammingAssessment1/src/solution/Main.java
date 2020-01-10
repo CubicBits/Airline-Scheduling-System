@@ -6,7 +6,8 @@ import java.time.LocalDate;
 import baseclasses.*;
 
 /**
- * This class allows you to run the code in your classes yourself, for testing and development
+ * Jack Owen
+ * Manchester Metropolitan University id: 17032929
  */
 public class Main {
 
