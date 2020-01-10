@@ -68,13 +68,13 @@ public class Main {
 		
 		Schedule schedule = schedulerRunner.run();
 
-//		QualityScoreCalculator score = new QualityScoreCalculator(aircraft, crew, passengers, schedule); // submit final schedule for score analysis
-//		
-//		String[] a = new QualityScoreCalculator(aircraft, crew, passengers, schedule).describeQualityScore();
-//		for (String b : a) {
-//		  	System.out.println(b);
-//		  }
-//		System.out.println(score.calculateQualityScore()+" (score total)");
+		QualityScoreCalculator score = new QualityScoreCalculator(aircraft, crew, passengers, schedule); // submit final schedule for score analysis
+
+		/*String[] a = new QualityScoreCalculator(aircraft, crew, passengers, schedule).describeQualityScore();
+		for (String b : a) {
+		  	System.out.println(b);
+		  }
+		System.out.println(score.calculateQualityScore()+" (score total)");*/
 
 	}
 
