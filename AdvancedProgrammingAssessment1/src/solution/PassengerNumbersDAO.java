@@ -38,7 +38,6 @@ public class PassengerNumbersDAO implements IPassengerNumbersDAO {
 	 */
 	@Override
 	public int getPassengerNumbersFor(int flightNumber, LocalDate date) {
-		// TODO still fully test
 		try {
 			return passengerNumbers.get(date.toString()+":"+flightNumber);
 		}
@@ -56,14 +55,6 @@ public class PassengerNumbersDAO implements IPassengerNumbersDAO {
 	 */
 	@Override
 	public void loadPassengerNumbersData(Path p) throws DataLoadingException {
-		// TODO still to fully test
-		// perhaps load all projections into a HashMap
-		// DO NOT simply open a connection with db and query, as this will make it difficult to query multiple files
-		// possible solutions to store data:
-		// 1. HashMap with key: a concatenation of the compound keys (date, flightNumber)
-		// 2. HashMap with a List/Array as key, holding (date, FlightNumber)
-		// 2. New class for single flight booking with the three members, thus require querying each value
-		// 3. ArrayList?
 
 		Connection connection = null;
 
@@ -88,12 +79,9 @@ public class PassengerNumbersDAO implements IPassengerNumbersDAO {
 		}
 		catch(SQLException e)
 		{
-			// if the error message is "out of memory",
-			// it probably means no database file is found
-//			System.err.println(e.getMessage()); //! last checked it completed default tests but printed this error, retry again
 			throw new DataLoadingException(e);
 		}
-		catch(NullPointerException e) // maybe not necessary
+		catch(NullPointerException e)
 		{
 			throw new DataLoadingException(e);
 		}
@@ -119,10 +107,7 @@ public class PassengerNumbersDAO implements IPassengerNumbersDAO {
 	 */
 	@Override
 	public void reset() {
-		// TODO still to fully test
 		passengerNumbers.clear();
-
-
 	}
 
 }

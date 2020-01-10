@@ -18,9 +18,7 @@ import baseclasses.IAircraftDAO;
  */
 public class AircraftDAO implements IAircraftDAO {
 	List<Aircraft> fleet = new ArrayList<Aircraft>();
-	
-//	set all String comparison types to Uppercase. not possible in main.
-	
+		
 	/**
 	 * Loads the aircraft data from the specified file, adding them to the currently loaded aircraft
 	 * Multiple calls to this function, perhaps on different files, would thus be cumulative
@@ -88,7 +86,6 @@ public class AircraftDAO implements IAircraftDAO {
 	 */
 	@Override
 	public List<Aircraft> findAircraftBySeats(int seats) {
-		//! still to be tested
 		List<Aircraft> result = new ArrayList<Aircraft>();
 		for (Aircraft aircraft : fleet) {
 			if (aircraft.getSeats() >= seats) {
@@ -105,7 +102,6 @@ public class AircraftDAO implements IAircraftDAO {
 	 */
 	@Override
 	public List<Aircraft> findAircraftByStartingPosition(String startingPosition) {
-		// still to be tested
 		List<Aircraft> result = new ArrayList<Aircraft>();
 		for (Aircraft aircraft : fleet) {
 			if (aircraft.getStartingPosition().equals(startingPosition.toUpperCase())) {
@@ -122,7 +118,6 @@ public class AircraftDAO implements IAircraftDAO {
 	 */
 	@Override
 	public Aircraft findAircraftByTailCode(String tailCode) {
-		// still to be tested
 		for (Aircraft aircraft : fleet) {
 			if (aircraft.getTailCode().equals(tailCode.toUpperCase())) {
 				return aircraft;
@@ -138,7 +133,6 @@ public class AircraftDAO implements IAircraftDAO {
 	 */
 	@Override
 	public List<Aircraft> findAircraftByType(String typeCode) {
-		// still to be tested
 		List<Aircraft> result = new ArrayList<Aircraft>();
 		for (Aircraft aircraft : fleet) {
 			if (aircraft.getTypeCode().equals(typeCode)) {
@@ -154,7 +148,6 @@ public class AircraftDAO implements IAircraftDAO {
 	 */
 	@Override
 	public List<Aircraft> getAllAircraft() {
-		//ArrayList<Aircraft> fleetClone = new ArrayList<>(fleet);
 		return new ArrayList<>(fleet);
 	}
 
@@ -164,7 +157,6 @@ public class AircraftDAO implements IAircraftDAO {
 	 */
 	@Override
 	public int getNumberOfAircraft() {
-		// still to be tested
 		return fleet.size();
 	}
 
@@ -173,7 +165,6 @@ public class AircraftDAO implements IAircraftDAO {
 	 */
 	@Override
 	public void reset() {
-		// still to be tested
 		fleet.clear();
 	}
 

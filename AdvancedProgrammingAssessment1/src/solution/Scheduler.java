@@ -19,27 +19,15 @@ public class Scheduler implements IScheduler {
     @Override
     public Schedule generateSchedule(IAircraftDAO aircraftDAO, ICrewDAO crewDAO, IRouteDAO routeDAO, IPassengerNumbersDAO passengerNumbersDAO,
                                      LocalDate startDate, LocalDate endDate) {
-    	/*new Thread(new Runnable() {
-    		public void run() {
-	    		try {
-	    			Thread.sleep(120000);
-	    			}
-	    		catch (InterruptedException e) {
-	    			e.printStackTrace();
-	    			}
-	    		stop();
-    		}
-    	}).start();*/
-
     	this.schedule = new Schedule(routeDAO, startDate, endDate);
     	/* Maps to record Crew UK arrival times, instead of having to loop through all Flights every time */
         cabinCrewArrivalsInUK = new HashMap<>();
         pilotsArrivalsInUK = new HashMap<>();
-        
+
         List<FlightInfo> flights = schedule.getRemainingAllocations();
         ArrayList<ArrayList<FlightInfo>> flightPairing = new ArrayList<>(); // two-dimensional array list legA:legB
         
-        /* Create Flight Pairings, outbound and return Flights, or one-off Flights */
+        /* Generate Flight Pairings */
         FlightInfo outboundFlight;
         String outboundArrivalAirport;
         String outboundDepartureAirport;
@@ -48,12 +36,9 @@ public class Scheduler implements IScheduler {
             outboundArrivalAirport = outboundFlight.getFlight().getArrivalAirportCode();
             outboundDepartureAirport = outboundFlight.getFlight().getDepartureAirportCode();
             for (FlightInfo returnFlight : flights) {
-                // find the first pairing match of a return flight
-                // todo perhaps, try to select the perfect pairing match instead of the first one found in list.
                 if (returnFlight.getFlight().getDepartureAirportCode().equals(outboundArrivalAirport)
                         && outboundFlight.getLandingDateTime().compareTo(returnFlight.getDepartureDateTime()) < 0
-                        && returnFlight.getFlight().getArrivalAirportCode().equals(outboundDepartureAirport)
-                    ) {
+                        && returnFlight.getFlight().getArrivalAirportCode().equals(outboundDepartureAirport)) {
                     ArrayList<FlightInfo> pair = new ArrayList<>();
                     pair.add(outboundFlight);
                     pair.add(returnFlight);
@@ -107,21 +92,22 @@ public class Scheduler implements IScheduler {
         return schedule;
     }
 
-    /*a function to report best schedules and output improved scores to the console
-     * maybe rename to compareScheduleScore*/
+    /* Reports improved schedules and outputs improved score values to the console */
      private void handleScheduleScore(IAircraftDAO aircraftDAO, ICrewDAO crewDAO, IPassengerNumbersDAO passengerNumbersDAO, Schedule schedule) {
     	 long scheduleScore;
+    	 boolean description = false;
          scheduleScore = new QualityScoreCalculator(aircraftDAO, crewDAO, passengerNumbersDAO, schedule).calculateQualityScore();
     	 if (scheduleScore < bestScheduleSoFarScore) {
              bestScheduleSoFarScore = scheduleScore;
              schedulerRunner.reportBestScheduleSoFar(schedule);
              System.out.println(bestScheduleSoFarScore + " (score best)"); // ongoing best score output
-
-             String[] a = new QualityScoreCalculator(aircraftDAO, crewDAO, passengerNumbersDAO, schedule).describeQualityScore();
-             for (String b : a) {
-                System.out.println(b);
+             
+             if (description) {
+            	 String[] a = new QualityScoreCalculator(aircraftDAO, crewDAO, passengerNumbersDAO, schedule).describeQualityScore();
+                 for (String b : a) {
+                    System.out.println(b);
+                 }
              }
-
          } 
      }
 
@@ -189,7 +175,6 @@ public class Scheduler implements IScheduler {
         }
         // add Captain Flight arrival times to Map
         if (Utilities.airportIsInUK(outboundFlight.getFlight().getArrivalAirportCode())) {
-            // add cabinCrew member to ArrivalsInUK map for UK arrivals future reference.
             if (pilotsArrivalsInUK.containsKey(captain)) { //captain key exists in Map already
                 List<LocalDateTime> l = pilotsArrivalsInUK.get(captain);
                 l.add(outboundFlight.getLandingDateTime());
@@ -217,42 +202,7 @@ public class Scheduler implements IScheduler {
      * firstly, attempt to allocate a Captain with matching Route Home Base and Aircraft Type Rating to
      * take advantage of using a helper function to check for an appropriate Captain */
     private void allocateCaptain(ICrewDAO crewDAO, FlightInfo flight) {
-        Pilot captain = null;
-        Aircraft aircraft = schedule.getAircraftFor(flight);
-        Route route = flight.getFlight();
-        Pilot.Rank rank = Pilot.Rank.CAPTAIN;
-        switch (0) {
-            case 0:
-                List<Pilot> pilotsByHomeBaseAndTypeRating = crewDAO.findPilotsByHomeBaseAndTypeRating(aircraft.getTypeCode(), route.getDepartureAirportCode());
-                captain = findAvailablePilot(pilotsByHomeBaseAndTypeRating, flight, rank);
-                if (captain != null) break;
-            case 1:
-                List<Pilot> pilotsByTypeRating = crewDAO.findPilotsByTypeRating(aircraft.getTypeCode());
-                captain = findAvailablePilot(pilotsByTypeRating, flight, rank);
-                if (captain != null) break;
-            case 2:
-                List<Pilot> pilotsByHomeBase = crewDAO.findPilotsByHomeBase(route.getDepartureAirportCode());
-                captain = findAvailablePilot(pilotsByHomeBase, flight, rank);
-                if (captain != null) break;
-            case 3:
-                List<Pilot> pilotsAll = crewDAO.getAllPilots();
-                captain = findAvailablePilot(pilotsAll, flight, rank);
-                if (captain != null) break;
-            case 4: // duplicate of case 3, however no isNightlyRested in UK check
-                List<Pilot> pilotsAll2 = crewDAO.getAllPilots();
-                for (Pilot p : pilotsAll2) {
-	                if (p.getRank() == rank && !schedule.hasConflict(p, flight)) {
-	                    captain = p;
-	                    break;
-	                }
-                }
-                if (captain != null) break;
-        }
-        // debug tester
-        if (captain == null) {
-            System.err.println("Captain allocated as Null 2");
-        }
-
+    	Pilot captain = findAvailablePilot(crewDAO.getAllPilots(), flight, Pilot.Rank.CAPTAIN);
         try {
             schedule.allocateCaptainTo(captain, flight);
         } catch (DoubleBookedException e) {
@@ -260,7 +210,6 @@ public class Scheduler implements IScheduler {
             e.printStackTrace();
         }
         // add cabinCrew member to ArrivalsInUK map for UK arrivals future reference.
-        // this actually didn't improve score, it's use was too insignificant.
         if (Utilities.airportIsInUK(flight.getFlight().getArrivalAirportCode())) {
             if (pilotsArrivalsInUK.containsKey(captain)) { //cabinCrew key exists already
                 List<LocalDateTime> l = pilotsArrivalsInUK.get(captain);
@@ -272,39 +221,13 @@ public class Scheduler implements IScheduler {
                 pilotsArrivalsInUK.put(captain, l);
             }
         }
-
-        // debug tester
-        if (schedule.getCaptainOf(flight) == null) {
-            System.out.println("Captain not allocated to flight " + flight);
-        }
     }
 
 
 
     /*allocate a First Officer to a multiple Flights*/
     private void allocateFirstOfficer(ICrewDAO crewDAO, FlightInfo outboundFlight, FlightInfo returnFlight) {
-        Pilot firstOfficer = null;
-        Aircraft aircraft = schedule.getAircraftFor(outboundFlight);
-        Route route = outboundFlight.getFlight();
-        Pilot.Rank rank = Pilot.Rank.FIRST_OFFICER;
-        switch (0) {
-            case 0:
-                List<Pilot> pilotsByHomeBaseAndTypeRating = crewDAO.findPilotsByHomeBaseAndTypeRating(aircraft.getTypeCode(), route.getDepartureAirportCode());
-                firstOfficer = findAvailablePilot(pilotsByHomeBaseAndTypeRating, outboundFlight, returnFlight, rank);
-                if (firstOfficer != null) break;
-            case 1:
-                List<Pilot> pilotsByTypeRating = crewDAO.findPilotsByTypeRating(aircraft.getTypeCode());
-                firstOfficer = findAvailablePilot(pilotsByTypeRating, outboundFlight, returnFlight, rank);
-                if (firstOfficer != null) break;
-            case 2: // todo review this condition, it seemed to add ~ 132,380 to score.
-                List<Pilot> pilotsByHomeBase = crewDAO.findPilotsByHomeBase(route.getDepartureAirportCode());
-                if (firstOfficer != null) break;
-            case 3:
-                List<Pilot> pilotsAll = crewDAO.getAllPilots();
-                firstOfficer = findAvailablePilot(pilotsAll, outboundFlight, returnFlight, rank);
-
-                if (firstOfficer != null) break; // slightly redundant, only necessary for cases that are not the final case
-        }
+        Pilot firstOfficer = findAvailablePilot(crewDAO.getAllPilots(), outboundFlight, returnFlight, Pilot.Rank.FIRST_OFFICER);
         // allocate First Officer to outbound and return Flight.
         try {
             schedule.allocateFirstOfficerTo(firstOfficer, outboundFlight);
@@ -341,50 +264,17 @@ public class Scheduler implements IScheduler {
                 pilotsArrivalsInUK.put(firstOfficer, l);
             }
         }
-
-        // debug testers
-        if (schedule.getFirstOfficerOf(outboundFlight) == null) {
-            System.out.println("First Officer not allocated to outbound flight " + outboundFlight);
-        }
-        if (schedule.getFirstOfficerOf(returnFlight) == null) {
-            System.out.println("First Officer not allocated to return flight " + returnFlight);
-        }
     }
 
     /*allocate a First Officer to a single Flight*/
     private void allocateFirstOfficer(ICrewDAO crewDAO, FlightInfo flight) {
-        Pilot firstOfficer = null;
-        Aircraft aircraft = schedule.getAircraftFor(flight);
-        Route route = flight.getFlight();
-        Pilot.Rank rank = Pilot.Rank.FIRST_OFFICER;
-        switch (0) {
-            case 0:
-                List<Pilot> pilotsByHomeBaseAndTypeRating = crewDAO.findPilotsByHomeBaseAndTypeRating(aircraft.getTypeCode(), route.getDepartureAirportCode());
-//                Collections.shuffle(pilotsByHomeBaseAndTypeRating, new Random(seed));
-                firstOfficer = findAvailablePilot(pilotsByHomeBaseAndTypeRating, flight, rank);
-                if (firstOfficer != null) break;
-            case 1:
-                List<Pilot> pilotsByTypeRating = crewDAO.findPilotsByTypeRating(aircraft.getTypeCode());
-//                Collections.shuffle(pilotsByTypeRating, new Random(seed));
-                firstOfficer = findAvailablePilot(pilotsByTypeRating, flight, rank);
-                if (firstOfficer != null) break;
-            case 2: // todo review this condition, it seemed to add ~ 132,380 to score.
-                List<Pilot> pilotsByHomeBase = crewDAO.findPilotsByHomeBase(route.getDepartureAirportCode());
-//                firstOfficer = findAvailablePilot(pilotsByHomeBase, flight, rank);
-                if (firstOfficer != null) break;
-            case 3:
-                List<Pilot> pilotsAll = crewDAO.getAllPilots();
-//                Collections.shuffle(pilotsAll, new Random(seed));
-                firstOfficer = findAvailablePilot(pilotsAll, flight, rank);
-                if (firstOfficer != null) break;
-        }
+        Pilot firstOfficer = findAvailablePilot(crewDAO.getAllPilots(), flight, Pilot.Rank.FIRST_OFFICER);
         try {
             schedule.allocateFirstOfficerTo(firstOfficer, flight);
         } catch (DoubleBookedException e) {
             System.err.println("First Officer allocation error");
         }
         // add cabinCrew member to ArrivalsInUK map for UK arrivals future reference.
-        // this also seems insignificant.
         if (Utilities.airportIsInUK(flight.getFlight().getArrivalAirportCode())) {
             if (pilotsArrivalsInUK.containsKey(firstOfficer)) {
                 List<LocalDateTime> l = pilotsArrivalsInUK.get(firstOfficer);
@@ -395,11 +285,6 @@ public class Scheduler implements IScheduler {
                 l.add(flight.getLandingDateTime());
                 pilotsArrivalsInUK.put(firstOfficer, l);
             }
-        }
-
-        // debug testers
-        if (schedule.getFirstOfficerOf(flight) == null) {
-            System.out.println("First Officer not allocated to flight " + flight);
         }
     }
 
@@ -431,7 +316,7 @@ public class Scheduler implements IScheduler {
             }
         }
         index++;
-        history.add(new ArrayList<>()); // homebase saves ~2,604,090
+        history.add(new ArrayList<>()); // homebase
         for (Pilot p : history.get(index-1)) {
             if (p.getHomeBase().equals(outboundFlight.getFlight().getDepartureAirportCode())) {
                 history.get(index).add(p);
@@ -440,7 +325,6 @@ public class Scheduler implements IScheduler {
         /* pick best option of all possibilities*/
         for (int i=history.size()-1; i>=0; i--) {
             if (!history.get(i).isEmpty()) {
-//                return history.get(i).get(0);
             	return history.get(i).get(history.get(i).size() / 2);
             }
         }
@@ -450,21 +334,138 @@ public class Scheduler implements IScheduler {
     /*  returns a Pilot for a matching Flight Pairing
     called twice by allocateFirstOfficer and allocateCaptain */
     private Pilot findAvailablePilot(List<Pilot> pilots, FlightInfo flight, Pilot.Rank rank) {
+        ArrayList<List<Pilot>> history = new ArrayList<>();
+
+        int index = 0;
+        history.add(new ArrayList<>());
         for (Pilot p : pilots) {
-            if (isRestedInUK(p, flight)) {
-                if (p.getRank() == rank && !schedule.hasConflict(p, flight)) {
-                    return p;
+            if (p.getRank() == rank) {
+                if (!schedule.hasConflict(p, flight)) {
+                    
+                    history.get(index).add(p);
                 }
+            }
+        }
+        index++;
+        history.add(new ArrayList<>());
+        for (Pilot p : history.get(index-1)) {
+            if (isRestedInUK(p, flight)) {
+            	
+                history.get(index).add(p);
+            }
+        }
+        index++;
+        history.add(new ArrayList<>());
+        for (Pilot p : history.get(index-1)) {
+            if (p.isQualifiedFor(schedule.getAircraftFor(flight))) {
+            	
+                history.get(index).add(p);
+            }
+        }
+        index++;
+        history.add(new ArrayList<>());
+        for (Pilot p : history.get(index-1)) {
+            if (p.getHomeBase().equals(flight.getFlight().getDepartureAirportCode())) {
+                history.get(index).add(p);
+            }
+        }
+        
+        /* pick best option of all possibilities*/
+        for (int i=history.size()-1; i>=0; i--) {
+            if (!history.get(i).isEmpty()) {
+                return history.get(i).get(history.get(i).size()-1); // last option in list
             }
         }
         return null;
     }
-    
+
+    /* allocate many Cabin Crew to 2 flights */
+    private void allocateCabinCrew(ICrewDAO crewDAO, FlightInfo outboundFlight, FlightInfo returnFlight) {
+        for (int i=0; i<schedule.getAircraftFor(outboundFlight).getCabinCrewRequired(); i++) {
+            ArrayList<List<CabinCrew>> history = new ArrayList<>(); // two-dimensional history of crew lists
+            history.add(new ArrayList<>());
+            history.add(new ArrayList<>());
+            history.add(new ArrayList<>());
+            history.add(new ArrayList<>());
+            int index = 0;
+            for (CabinCrew member : crewDAO.getAllCabinCrew()) {
+                if (!schedule.hasConflict(member, outboundFlight) && !schedule.getCabinCrewOf(outboundFlight).contains(member)) {
+                    if (!schedule.hasConflict(member, returnFlight) && !schedule.getCabinCrewOf(returnFlight).contains(member)) {
+                        history.get(index).add(member);
+                    }
+                }
+            }
+            index++;
+            for (CabinCrew member : history.get(index-1)) {
+                if (isRestedInUK(member, outboundFlight) && isRestedInUK(member, returnFlight)) {
+                    history.get(index).add(member);
+                }
+            }
+            index++;
+            for (CabinCrew member : history.get(index-1)) {
+                if (member.isQualifiedFor(schedule.getAircraftFor(outboundFlight))) {
+                    history.get(index).add(member);
+                }
+            }
+            index++;
+            for (CabinCrew member : history.get(index-1)) {
+                if (member.getHomeBase().equals(outboundFlight.getFlight().getDepartureAirportCode())) {
+                    history.get(index).add(member);
+                }
+            }
+            /* pick best option of all possibilities*/
+            CabinCrew cabinCrew = null;
+            for (int j=history.size()-1; j>=0; j--) {
+                if (!history.get(j).isEmpty()) {
+                    cabinCrew = history.get(j).get(new Random().nextInt(history.get(j).size())); // random object in list
+                    break;
+                }
+            }
+
+            /*allocate to flight*/
+            try {
+                schedule.allocateCabinCrewTo(cabinCrew, outboundFlight);
+            } catch (DoubleBookedException e) {
+                System.err.println("Cabin Crew allocation error outboundFlight");
+                e.printStackTrace();
+            }
+            try {
+                schedule.allocateCabinCrewTo(cabinCrew, returnFlight);
+            } catch (DoubleBookedException e) {
+                System.err.println("Cabin Crew allocation error returnFlight");
+                e.printStackTrace();
+            }
+            /*add cabinCrew member to ArrivalsInUK map for UK arrivals future reference*/
+            if (Utilities.airportIsInUK(outboundFlight.getFlight().getArrivalAirportCode())) {
+                if (cabinCrewArrivalsInUK.containsKey(cabinCrew)) { //cabinCrew key exists already
+                    List<LocalDateTime> l = cabinCrewArrivalsInUK.get(cabinCrew);
+                    l.add(outboundFlight.getLandingDateTime());
+                }
+                else {
+                    List<LocalDateTime> l = new ArrayList<>();
+                    l.add(outboundFlight.getLandingDateTime());
+                    cabinCrewArrivalsInUK.put(cabinCrew, l);
+                }
+            }
+            if (Utilities.airportIsInUK(returnFlight.getFlight().getArrivalAirportCode())) {
+                if (cabinCrewArrivalsInUK.containsKey(cabinCrew)) { //cabinCrew key exists already
+                    List<LocalDateTime> l = cabinCrewArrivalsInUK.get(cabinCrew);
+                    l.add(returnFlight.getLandingDateTime());
+                }
+                else {
+                    List<LocalDateTime> l = new ArrayList<>();
+                    l.add(returnFlight.getLandingDateTime());
+                    cabinCrewArrivalsInUK.put(cabinCrew, l);
+                }
+            }
+        }
+    }
+
     /*allocate many Cabin Crew to a flight aircraft
-    * firstly, attempt to allocate matching Cabin Crew by matching Home Base and Type Rating
-    * if not, attempt to allocate by matching type Rating only
-    * if not, attempt to allocate by Home Base only,
-    * if not, finally, allocate any Cabin Crew that do not have conflict with the Flight*/
+     * firstly, attempt to allocate matching Cabin Crew by matching Home Base and Type Rating
+     * if not, attempt to allocate by matching type Rating only
+     * if not, attempt to allocate by Home Base only,
+     * if not, finally, allocate any Cabin Crew that do not have conflict with the Flight*/
     private void allocateCabinCrew(ICrewDAO crewDAO, FlightInfo flight) {
         for (int i=0; i<schedule.getAircraftFor(flight).getCabinCrewRequired(); i++) {
             ArrayList<List<CabinCrew>> history = new ArrayList<>(); // two-dimensional history of crew lists
@@ -521,88 +522,6 @@ public class Scheduler implements IScheduler {
                     List<LocalDateTime> l = new ArrayList<>();
                     l.add(flight.getLandingDateTime());
                     cabinCrewArrivalsInUK.put(c, l);
-                }
-            }
-        }
-    }
-
-    /* allocate many Cabin Crew to 2 flights */
-    private void allocateCabinCrew(ICrewDAO crewDAO, FlightInfo outboundFlight, FlightInfo returnFlight) {
-        for (int i=0; i<schedule.getAircraftFor(outboundFlight).getCabinCrewRequired(); i++) {
-            ArrayList<List<CabinCrew>> history = new ArrayList<>(); // two-dimensional history of crew lists
-            history.add(new ArrayList<>());
-            history.add(new ArrayList<>());
-            history.add(new ArrayList<>());
-            history.add(new ArrayList<>());
-            int index = 0;
-            for (CabinCrew member : crewDAO.getAllCabinCrew()) {
-                if (!schedule.hasConflict(member, outboundFlight) && !schedule.getCabinCrewOf(outboundFlight).contains(member)) {
-                    if (!schedule.hasConflict(member, returnFlight) && !schedule.getCabinCrewOf(returnFlight).contains(member)) {
-                        history.get(index).add(member);
-                    }
-                }
-            }
-            index++;
-            for (CabinCrew member : history.get(index-1)) {
-                if (isRestedInUK(member, outboundFlight) && isRestedInUK(member, returnFlight)) {
-                    history.get(index).add(member);
-                }
-            }
-            index++;
-            for (CabinCrew member : history.get(index-1)) {
-                if (member.isQualifiedFor(schedule.getAircraftFor(outboundFlight))) {
-                    history.get(index).add(member);
-                }
-            }
-            index++;
-            for (CabinCrew member : history.get(index-1)) {
-                if (member.getHomeBase().equals(outboundFlight.getFlight().getDepartureAirportCode())) {
-                    history.get(index).add(member);
-                }
-            }
-            /* pick best option of all possibilities*/
-            CabinCrew cabinCrew = null;
-            for (int j=history.size()-1; j>=0; j--) {
-                if (!history.get(j).isEmpty()) {
-                    cabinCrew = history.get(j).get(0); // this takes the first item from the list
-                    break;
-                }
-            }
-
-            /*allocate to flight*/
-            try {
-                schedule.allocateCabinCrewTo(cabinCrew, outboundFlight);
-            } catch (DoubleBookedException e) {
-                System.err.println("Cabin Crew allocation error outboundFlight");
-                e.printStackTrace();
-            }
-            try {
-                schedule.allocateCabinCrewTo(cabinCrew, returnFlight);
-            } catch (DoubleBookedException e) {
-                System.err.println("Cabin Crew allocation error returnFlight");
-                e.printStackTrace();
-            }
-            /*add cabinCrew member to ArrivalsInUK map for UK arrivals future reference*/
-            if (Utilities.airportIsInUK(outboundFlight.getFlight().getArrivalAirportCode())) {
-                if (cabinCrewArrivalsInUK.containsKey(cabinCrew)) { //cabinCrew key exists already
-                    List<LocalDateTime> l = cabinCrewArrivalsInUK.get(cabinCrew);
-                    l.add(outboundFlight.getLandingDateTime());
-                }
-                else {
-                    List<LocalDateTime> l = new ArrayList<>();
-                    l.add(outboundFlight.getLandingDateTime());
-                    cabinCrewArrivalsInUK.put(cabinCrew, l);
-                }
-            }
-            if (Utilities.airportIsInUK(returnFlight.getFlight().getArrivalAirportCode())) {
-                if (cabinCrewArrivalsInUK.containsKey(cabinCrew)) { //cabinCrew key exists already
-                    List<LocalDateTime> l = cabinCrewArrivalsInUK.get(cabinCrew);
-                    l.add(returnFlight.getLandingDateTime());
-                }
-                else {
-                    List<LocalDateTime> l = new ArrayList<>();
-                    l.add(returnFlight.getLandingDateTime());
-                    cabinCrewArrivalsInUK.put(cabinCrew, l);
                 }
             }
         }
