@@ -94,7 +94,6 @@ public class CrewDAO implements ICrewDAO {
 
 		}
 		catch (IOException ioe) {
-			//There was a problem reading the file
 			throw new DataLoadingException(ioe);
 		}
 		catch (OutOfMemoryError e) {
@@ -124,7 +123,6 @@ public class CrewDAO implements ICrewDAO {
 	 */
 	@Override
 	public List<CabinCrew> findCabinCrewByHomeBase(String airportCode) {
-		// still to be tested
 		List<CabinCrew> res = new ArrayList<CabinCrew>();
 		for (CabinCrew cabincrew : cabinCrew) { 
 			if (cabincrew.getHomeBase().toUpperCase().equals(airportCode.toUpperCase())) {
@@ -145,7 +143,6 @@ public class CrewDAO implements ICrewDAO {
 	 */
 	@Override
 	public List<CabinCrew> findCabinCrewByHomeBaseAndTypeRating(String typeCode, String airportCode) {
-		// still to test fully 
 		List<CabinCrew> res = new ArrayList<CabinCrew>();
 		for (CabinCrew cabincrew : cabinCrew) { 
 			if (cabincrew.getHomeBase().toUpperCase().equals(airportCode.toUpperCase())) {
@@ -169,7 +166,6 @@ public class CrewDAO implements ICrewDAO {
 	 */
 	@Override
 	public List<CabinCrew> findCabinCrewByTypeRating(String typeCode) {
-		// still to be tested fully
 		List<CabinCrew> res = new ArrayList<CabinCrew>();
 		for (CabinCrew cabincrew : cabinCrew) { 
 			for (String type : cabincrew.getTypeRatings()) {
@@ -191,7 +187,6 @@ public class CrewDAO implements ICrewDAO {
 	 */
 	@Override
 	public List<Pilot> findPilotsByHomeBase(String airportCode) {
-		// still to be tested
 		List<Pilot> res = new ArrayList<Pilot>();
 		for (Pilot pilot : pilots) { 
 			if (pilot.getHomeBase().toUpperCase().equals(airportCode.toUpperCase())) {
@@ -212,7 +207,6 @@ public class CrewDAO implements ICrewDAO {
 	 */
 	@Override
 	public List<Pilot> findPilotsByHomeBaseAndTypeRating(String typeCode, String airportCode) {
-		// still to be fully tested
 		ArrayList<Pilot> res = new ArrayList<Pilot>();
 		for (Pilot pilot : pilots) {
 			if (pilot.getHomeBase().toUpperCase().equals(airportCode.toUpperCase())) {
@@ -236,7 +230,6 @@ public class CrewDAO implements ICrewDAO {
 	 */
 	@Override
 	public List<Pilot> findPilotsByTypeRating(String typeCode) {
-		// still to be tested
 		List<Pilot> res = new ArrayList<Pilot>();
 		for (Pilot pilot : pilots) { 
 			for (String type : pilot.getTypeRatings()) {
@@ -268,7 +261,6 @@ public class CrewDAO implements ICrewDAO {
 		List<Crew> allCrew = new ArrayList<>();
 		allCrew.addAll(pilots);
 		allCrew.addAll(cabinCrew);
-
 		return allCrew;
 	}
 
@@ -284,7 +276,6 @@ public class CrewDAO implements ICrewDAO {
 
 	@Override
 	public int getNumberOfCabinCrew() {
-		// still to be fully tested
 		return cabinCrew.size();
 	}
 
@@ -295,7 +286,6 @@ public class CrewDAO implements ICrewDAO {
 	 */
 	@Override
 	public int getNumberOfPilots() {
-		// still to be tested
 		return pilots.size();
 	}
 
@@ -304,7 +294,6 @@ public class CrewDAO implements ICrewDAO {
 	 */
 	@Override
 	public void reset() {
-		// TODO Auto-generated method stub
 		pilots.clear();
 		cabinCrew.clear();
 	}

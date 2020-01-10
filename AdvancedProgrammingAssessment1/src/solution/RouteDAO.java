@@ -41,13 +41,6 @@ public class RouteDAO implements IRouteDAO {
 	 */
 	@Override
 	public void loadRouteData(Path p) throws DataLoadingException {
-//		When supplied with a Path object pointing to an XML file formatted as specified earlier, this method
-//		should cause the DAO to load the routes contained within the file into an appropriate data structure
-//				(e.g. an ArrayList), setting the properties of the added route objects to appropriately reflect the
-//		values of the routes in the file. As with the previous DAOs, multiple calls to the loading method
-//		should be additive: it should be possible to load more than one file’s worth of routes into a single
-//		DAO. If there is a problem loading the data, perhaps because a file is malformed, then a
-//		DataLoadingException should be thrown.
 		
 		try {
 			File inputFile = new File(String.valueOf(p));
@@ -110,15 +103,12 @@ public class RouteDAO implements IRouteDAO {
 			}
 		} 
 		catch (FileNotFoundException fne) {
-			//There was a problem reading the file
 			throw new DataLoadingException(fne);
 		}
 		catch (IOException ioe) {
-			//There was a problem reading the file
 			throw new DataLoadingException(ioe);
 		}
 		catch (IllegalArgumentException iae) {
-			// there was a problem reading the file
 			throw new DataLoadingException(iae);
 		} 
 		catch (ParserConfigurationException e) {
@@ -148,7 +138,6 @@ public class RouteDAO implements IRouteDAO {
 	 */
 	@Override
 	public List<Route> findRoutesByDayOfWeek(String dayOfWeek) {
-		// TODO still fully test
 		ArrayList<Route> res = new ArrayList<>();
 		for (Route route : routes){
 			if (route.getDayOfWeek().equals(dayOfWeek)) {
@@ -166,7 +155,6 @@ public class RouteDAO implements IRouteDAO {
 	 */
 	@Override
 	public List<Route> findRoutesByDepartureAirportAndDay(String airportCode, String dayOfWeek) {
-		// TODO still to fully test
 		// search for dayOfWeek first, then by airportCode
 		ArrayList<Route> res = new ArrayList<>();
 		for (Route route : routes){
@@ -186,7 +174,6 @@ public class RouteDAO implements IRouteDAO {
 	 */
 	@Override
 	public List<Route> findRoutesDepartingAirport(String airportCode) {
-		// TODO still to fully test
 		ArrayList<Route> res = new ArrayList<>();
 		for (Route route : routes){
 			if (route.getDepartureAirportCode().equals(airportCode)) {
@@ -203,9 +190,6 @@ public class RouteDAO implements IRouteDAO {
 	 */
 	@Override
 	public List<Route> findRoutesbyDate(LocalDate date) { // Java LocalDate format: MONDAY
-		// TODO still to be fully tested
-		// TODO Check that this function should find result data, by getDayOfWeek() of a date 2019-08-12 date format.
-		// convert DayOfWeek enum type date to a string in with format Mon/Tue/Wed and compare with List routes for match
 		ArrayList<Route> res = new ArrayList<>();
 		String strDate = date.getDayOfWeek().toString();
 		switch (strDate) {
@@ -245,7 +229,6 @@ public class RouteDAO implements IRouteDAO {
 	 */
 	@Override
 	public List<Route> getAllRoutes() {
-		// TODO still to fully test
 		return new ArrayList<>(routes);
 	}
 
@@ -255,7 +238,6 @@ public class RouteDAO implements IRouteDAO {
 	 */
 	@Override
 	public int getNumberOfRoutes() {
-		// TODO still to fully test
 		return routes.size();
 	}
 
@@ -264,7 +246,6 @@ public class RouteDAO implements IRouteDAO {
 	 */
 	@Override
 	public void reset() {
-		// TODO still to fully test
 		routes.clear();
 	}
 
