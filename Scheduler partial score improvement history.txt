@@ -1,0 +1,88 @@
+Schedule improv order of priority
+
+198,550,000 Points from crew members scheduled to fly on aircraft types for which they are unqualified(50k a piece, ~ 900 flights/6687)
+    50,000 points if a crew member is asked to crew a plane for which they are not qualified.
+
+76,980,000 Points from scheduling aircraft to depart from airports other than where they last landed
+    see Class RestBeforeDepartingWrongAirportCalculator
+
+17,030,000 Points for crew members not having a long break during each week in lieu of a weekend
+16,988,000 Points for flying from an airport outside the UK without having landed there recently
+16,741,000 Points for flying to an airport outside the UK without an upcoming return flight
+5,106,056 Points from allocating aircraft larger or smaller than the forecast passenger numbers
+
+--
+374,503,626 total - before all changes to priority of conditions
+
+--
+
+365878810 (score best)
+1,539,690 Points from allocating aircraft larger or smaller than the forecast passenger numbers
+221,500 Points from aircraft schedules with short turnarounds
+77,100,000 Points from scheduling aircraft to depart from airports other than where they last landed
+0 Points from captains and first officers scheduled to fly in the wrong seat
+191,900,000 Points from crew members scheduled to fly on aircraft types for which they are unqualified
+27,220,000 Points for crew departing a UK airport without enough rest after their previous UK landing
+24,980,000 Points for crew members not having a long break during each week in lieu of a weekend
+2,726,500 Points for crew members not having enough rest before departing a UK airport other than their home base
+2,750,000 Points for crew members not having enough rest after landing at a UK airport other than their home base
+18,212,000 Points for flying to an airport outside the UK without an upcoming return flight
+18,471,000 Points for flying from an airport outside the UK without having landed there recently
+758,120 Points for crew members working more than their monthly limit
+
+--
+393686400 (score best)
+1,549,090 Points from allocating aircraft larger or smaller than the forecast passenger numbers
+159,300 Points from aircraft schedules with short turnarounds
+87,040,000 Points from scheduling aircraft to depart from airports other than where they last landed
+0 Points from captains and first officers scheduled to fly in the wrong seat
+198,000,000 Points from crew members scheduled to fly on aircraft types for which they are unqualified
+42,500,000 Points for crew departing a UK airport without enough rest after their previous UK landing
+23,660,000 Points for crew members not having a long break during each week in lieu of a weekend
+2,497,000 Points for crew members not having enough rest before departing a UK airport other than their home base
+2,467,000 Points for crew members not having enough rest after landing at a UK airport other than their home base
+17,385,000 Points for flying to an airport outside the UK without an upcoming return flight
+17,663,000 Points for flying from an airport outside the UK without having landed there recently
+766,010 Points for crew members working more than their monthly limit
+
+--
+
+381853080 without conflict
+376669650 without conflict & qualified for
+375773440 without conflict & qualified for & restedInUK
+375342120 without conflict & qualified for & restedInUK & homebase
+374916670 without conflict & qualified for & restedInUK & homebase (selecting last item in list)
+--
+375342120 first item
+375405870 last item
+--
+375557970 odd
+375342120 with only restedinuk and conflict
+--
+375342120 first item
+189719982 last item
+--
+
+aircraft / 2
+
+Quality score of generated schedule: 303,334,053
+Quality Score Breakdown:
+3,703,423 Points from allocating aircraft larger or smaller than the forecast passenger numbers
+162,200 Points from aircraft schedules with short turnarounds
+73,400,000 Points from scheduling aircraft to depart from airports other than where they last landed
+0 Points from captains and first officers scheduled to fly in the wrong seat
+134,800,000 Points from crew members scheduled to fly on aircraft types for which they are unqualified
+34,580,000 Points for crew departing a UK airport without enough rest after their previous UK landing
+20,550,000 Points for crew members not having a long break during each week in lieu of a weekend
+1,737,000 Points for crew members not having enough rest before departing a UK airport other than their home
+base
+1,688,500 Points for crew members not having enough rest after landing at a UK airport other than their home
+base
+16,065,000 Points for flying to an airport outside the UK without an upcoming return flight
+15,994,000 Points for flying from an airport outside the UK without having landed there recently
+653,930 Points for crew members working more than their monthly limit
+
+--
+
+aircraft list conflict ONLY: size - 1 result: 192,518,994
+aircraft list conflict ONLY: size / 2 result: 176,551,370
